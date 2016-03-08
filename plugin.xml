@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.jdt.ui.cleanUps">
+      <cleanUpConfigurationUI
+            class="org.loewner.jsr305cleanup.Jsr305CleanUpConfigurationUi"
+            cleanUpKind="saveAction"
+            name="jsr305CleanUpUi">
+      </cleanUpConfigurationUI>
+      <cleanUp
+            class="org.loewner.jsr305cleanup.Jsr305CleanUp"
+            id="jsr305CleanUp">
+      </cleanUp>
+      <cleanUpConfigurationUI
+            class="org.loewner.jsr305cleanup.Jsr305CleanUpConfigurationUi"
+            cleanUpKind="cleanUp"
+            name="jsr305CleanUpUi">
+      </cleanUpConfigurationUI>
+   </extension>
+
+</plugin>
