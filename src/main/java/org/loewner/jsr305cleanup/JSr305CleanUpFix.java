@@ -18,6 +18,9 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 public class JSr305CleanUpFix implements ICleanUpFix {
 
+	private static final String FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT = "javax.annotation.ParametersAreNonnullByDefault";
+	private static final String FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT = "edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault";
+
 	private final CleanUpContext _context;
 	private final Iterable<Annotation> _annotationsToRemove;
 	private final Collection<TypeDeclaration> _nodesToAnnotateWithParameterAreNonnullByDefault;
@@ -41,31 +44,30 @@ public class JSr305CleanUpFix implements ICleanUpFix {
 		for (final ASTNode node : _annotationsToRemove) {
 			rewriter.remove(node, null);
 		}
-		for (final TypeDeclaration node : _nodesToAnnotateWithParameterAreNonnullByDefault) {
-			final ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.MODIFIERS2_PROPERTY);
-			final MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
-			markerAnnotation.setTypeName(ast.newName("ParametersAreNonnullByDefault"));
-			listRewrite.insertFirst(markerAnnotation, null);
-		}
-		for (final TypeDeclaration node : _nodesToAnnotateWithReturnValuesAreNonnullByDefault) {
-			final ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.MODIFIERS2_PROPERTY);
-			final MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
-			markerAnnotation.setTypeName(ast.newName("ReturnValuesAreNonnullByDefault"));
-			listRewrite.insertFirst(markerAnnotation, null);
-		}
+		addAnnotation(ast, rewriter, "ParametersAreNonnullByDefault");
+		addAnnotation(ast, rewriter, "ReturnValuesAreNonnullByDefault");
 
 		change.setEdit(rewriter.rewriteAST());
 		if (!_nodesToAnnotateWithParameterAreNonnullByDefault.isEmpty()) {
 			final ImportRewrite importRewrite = ImportRewrite.create(_context.getCompilationUnit(), true);
-			importRewrite.addImport("javax.annotation.ParametersAreNonnullByDefault");
+			importRewrite.addImport(FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
 			change.addEdit(importRewrite.rewriteImports(progressMonitor));
 		}
 		if (!_nodesToAnnotateWithReturnValuesAreNonnullByDefault.isEmpty()) {
 			final ImportRewrite importRewrite = ImportRewrite.create(_context.getCompilationUnit(), true);
-			importRewrite.addImport("edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault");
+			importRewrite.addImport(FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT);
 			change.addEdit(importRewrite.rewriteImports(progressMonitor));
 		}
 		return change;
+	}
+
+	private void addAnnotation(final AST ast, final ASTRewrite rewriter, String annotationName) {
+		for (final TypeDeclaration node : _nodesToAnnotateWithParameterAreNonnullByDefault) {
+			final ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.MODIFIERS2_PROPERTY);
+			final MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
+			markerAnnotation.setTypeName(ast.newName(annotationName));
+			listRewrite.insertFirst(markerAnnotation, null);
+		}
 	}
 
 }

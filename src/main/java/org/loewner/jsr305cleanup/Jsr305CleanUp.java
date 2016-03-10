@@ -12,6 +12,8 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -27,22 +29,23 @@ public class Jsr305CleanUp implements ICleanUp {
 	static final String USE_PARAMETERS_ARE_NONNULL_BY_DEFAULT = "org.loewner.jsr305cleanup.USE_PARAMETERS_ARE_NONNULL_BY_DEFAULT";
 	static final String USE_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT = "org.loewner.jsr305cleanup.USE_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT";
 
-	private boolean _parameterAreNonnullByDefault;
-	private boolean _returnValuesAreNonnullByDefault;
+	private CleanUpOptions _options;
 
 	@Override
 	public void setOptions(CleanUpOptions options) {
-		_parameterAreNonnullByDefault = options.isEnabled(USE_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
-		_returnValuesAreNonnullByDefault = options.isEnabled(USE_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT);
+		_options = options;
+
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
+		final boolean parameterAreNonnullByDefault = _options.isEnabled(USE_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
+		final boolean returnValuesAreNonnullByDefault = _options.isEnabled(USE_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT);
 		final List<String> steps = new ArrayList<>();
-		if (_parameterAreNonnullByDefault) {
+		if (parameterAreNonnullByDefault) {
 			steps.add("Replacing @Nonnull parameter annotations with @ParametersAreNonnullByDefault");
 		}
-		if (_returnValuesAreNonnullByDefault) {
+		if (returnValuesAreNonnullByDefault) {
 			steps.add("Replacing @Nonnnull return value annotations with @ReturnValuesAreNonnullByDefault");
 		}
 		return steps.toArray(new String[0]);
@@ -55,6 +58,11 @@ public class Jsr305CleanUp implements ICleanUp {
 
 	@Override
 	public ICleanUpFix createFix(CleanUpContext context) throws CoreException {
+		final boolean parameterAreNonnullByDefault = _options.isEnabled(USE_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
+		final boolean returnValuesAreNonnullByDefault = _options.isEnabled(USE_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT);
+		if (!parameterAreNonnullByDefault && !returnValuesAreNonnullByDefault) {
+			return null;
+		}
 		final Collection<Annotation> annotationsToRemove = new ArrayList<>();
 		final Collection<TypeDeclaration> nodesToAnnotateWithParameterAreNonnullByDefault = new HashSet<>();
 		final Collection<TypeDeclaration> nodesToAnnotateWithReturnValuesAreNonnullByDefault = new HashSet<>();
@@ -63,17 +71,17 @@ public class Jsr305CleanUp implements ICleanUp {
 			@SuppressWarnings("unchecked")
 			@Override
 			public boolean visit(MethodDeclaration node) {
-				final boolean overridden = false; // TODO
+				final boolean overridden = isOverridden(node);
 				if (!overridden && node.getParent() instanceof TypeDeclaration) {
 					final TypeDeclaration typeDecl = (TypeDeclaration) node.getParent();
-					if (_returnValuesAreNonnullByDefault) {
+					if (returnValuesAreNonnullByDefault) {
 						final Annotation anno = getNonnullReturnValueAnnotationIfPresent(node);
 						if (anno != null) {
 							annotationsToRemove.add(anno);
 							nodesToAnnotateWithReturnValuesAreNonnullByDefault.add(typeDecl);
 						}
 					}
-					if (_parameterAreNonnullByDefault) {
+					if (parameterAreNonnullByDefault) {
 						final Collection<Annotation> annos = getNonnullAnnotationsOnParameters(node.parameters());
 						if (!annos.isEmpty()) {
 							annotationsToRemove.addAll(annos);
@@ -90,6 +98,29 @@ public class Jsr305CleanUp implements ICleanUp {
 		}
 		return new JSr305CleanUpFix(context, annotationsToRemove, nodesToAnnotateWithParameterAreNonnullByDefault,
 				nodesToAnnotateWithReturnValuesAreNonnullByDefault);
+	}
+
+	protected boolean isOverridden(MethodDeclaration node) {
+		final IMethodBinding methodBinding = node.resolveBinding();
+		final ITypeBinding declaringClass = methodBinding.getDeclaringClass();
+		return isDefinedInTypeOrSuperType(methodBinding, declaringClass);
+	}
+
+	private boolean isDefinedInTypeOrSuperType(final IMethodBinding methodBinding, ITypeBinding declaringClass) {
+		while (declaringClass != null) {
+			for (final IMethodBinding method : declaringClass.getDeclaredMethods()) {
+				if (methodBinding.overrides(method)) {
+					return true;
+				}
+			}
+			for (final ITypeBinding type : declaringClass.getInterfaces()) {
+				if (isDefinedInTypeOrSuperType(methodBinding, type)) {
+					return true;
+				}
+			}
+			declaringClass = declaringClass.getSuperclass();
+		}
+		return false;
 	}
 
 	@Override

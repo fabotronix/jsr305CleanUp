@@ -6,7 +6,7 @@
       <cleanUpConfigurationUI
             class="org.loewner.jsr305cleanup.Jsr305CleanUpConfigurationUi"
             cleanUpKind="saveAction"
-            name="jsr305CleanUpUi">
+            name="jsr305CleanUpUiSaveAction">
       </cleanUpConfigurationUI>
       <cleanUp
             class="org.loewner.jsr305cleanup.Jsr305CleanUp"
@@ -17,6 +17,10 @@
             cleanUpKind="cleanUp"
             name="jsr305CleanUpUi">
       </cleanUpConfigurationUI>
+      <cleanUpOptionsInitializer
+            class="org.loewner.jsr305cleanup.Jsr305CleanUpOptionsInitializer"
+            cleanUpKind="saveAction">
+      </cleanUpOptionsInitializer>
    </extension>
 
 </plugin>
