@@ -48,14 +48,16 @@ public class JSr305CleanUpFix implements ICleanUpFix {
 		addAnnotation(ast, rewriter, "ReturnValuesAreNonnullByDefault");
 
 		change.setEdit(rewriter.rewriteAST());
-		if (!_nodesToAnnotateWithParameterAreNonnullByDefault.isEmpty()) {
+		final boolean addImportForParameters = !_nodesToAnnotateWithParameterAreNonnullByDefault.isEmpty();
+		final boolean addImportForReturns = !_nodesToAnnotateWithReturnValuesAreNonnullByDefault.isEmpty();
+		if (addImportForParameters || addImportForReturns) {
 			final ImportRewrite importRewrite = ImportRewrite.create(_context.getCompilationUnit(), true);
-			importRewrite.addImport(FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
-			change.addEdit(importRewrite.rewriteImports(progressMonitor));
-		}
-		if (!_nodesToAnnotateWithReturnValuesAreNonnullByDefault.isEmpty()) {
-			final ImportRewrite importRewrite = ImportRewrite.create(_context.getCompilationUnit(), true);
-			importRewrite.addImport(FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT);
+			if (addImportForParameters) {
+				importRewrite.addImport(FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
+			}
+			if (addImportForReturns) {
+				importRewrite.addImport(FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT);
+			}
 			change.addEdit(importRewrite.rewriteImports(progressMonitor));
 		}
 		return change;
