@@ -53,7 +53,7 @@ public class Jsr305CleanUp implements ICleanUp {
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-		return new CleanUpRequirements(true, false, false, null);
+		return new CleanUpRequirements(true, true, false, null);
 	}
 
 	@Override
