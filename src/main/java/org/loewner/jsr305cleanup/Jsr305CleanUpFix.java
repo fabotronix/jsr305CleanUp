@@ -16,17 +16,14 @@ import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
-public class JSr305CleanUpFix implements ICleanUpFix {
-
-	private static final String FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT = "javax.annotation.ParametersAreNonnullByDefault";
-	private static final String FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT = "edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault";
+public class Jsr305CleanUpFix implements ICleanUpFix {
 
 	private final CleanUpContext _context;
 	private final Iterable<Annotation> _annotationsToRemove;
 	private final Collection<TypeDeclaration> _nodesToAnnotateWithParameterAreNonnullByDefault;
 	private final Collection<TypeDeclaration> _nodesToAnnotateWithReturnValuesAreNonnullByDefault;
 
-	JSr305CleanUpFix(CleanUpContext context, Iterable<Annotation> annotationsToRemove,
+	Jsr305CleanUpFix(CleanUpContext context, Iterable<Annotation> annotationsToRemove,
 			Collection<TypeDeclaration> nodesToAnnotateWithParameterAreNonnullByDefault,
 			Collection<TypeDeclaration> nodesToAnnotateWithReturnValuesAreNonnullByDefault) {
 		_context = context;
@@ -53,10 +50,10 @@ public class JSr305CleanUpFix implements ICleanUpFix {
 		if (addImportForParameters || addImportForReturns) {
 			final ImportRewrite importRewrite = ImportRewrite.create(_context.getCompilationUnit(), true);
 			if (addImportForParameters) {
-				importRewrite.addImport(FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
+				importRewrite.addImport(Jsr305CleanUp.FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
 			}
 			if (addImportForReturns) {
-				importRewrite.addImport(FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT);
+				importRewrite.addImport(Jsr305CleanUp.FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT);
 			}
 			change.addEdit(importRewrite.rewriteImports(progressMonitor));
 		}

@@ -29,6 +29,9 @@ public class Jsr305CleanUp implements ICleanUp {
 	static final String USE_PARAMETERS_ARE_NONNULL_BY_DEFAULT = "org.loewner.jsr305cleanup.USE_PARAMETERS_ARE_NONNULL_BY_DEFAULT";
 	static final String USE_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT = "org.loewner.jsr305cleanup.USE_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT";
 
+	static final String FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT = "edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault";
+	static final String FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT = "javax.annotation.ParametersAreNonnullByDefault";
+
 	private CleanUpOptions _options;
 
 	@Override
@@ -78,14 +81,18 @@ public class Jsr305CleanUp implements ICleanUp {
 						final Annotation anno = getNonnullReturnValueAnnotationIfPresent(node);
 						if (anno != null) {
 							annotationsToRemove.add(anno);
-							nodesToAnnotateWithReturnValuesAreNonnullByDefault.add(typeDecl);
+							if (!hasAnnotation(typeDecl, Jsr305CleanUp.FQN_RETURN_VALUES_ARE_NONNULL_BY_DEFAULT)) {
+								nodesToAnnotateWithReturnValuesAreNonnullByDefault.add(typeDecl);
+							}
 						}
 					}
 					if (parameterAreNonnullByDefault) {
 						final Collection<Annotation> annos = getNonnullAnnotationsOnParameters(node.parameters());
 						if (!annos.isEmpty()) {
 							annotationsToRemove.addAll(annos);
-							nodesToAnnotateWithParameterAreNonnullByDefault.add(typeDecl);
+							if (!hasAnnotation(typeDecl, Jsr305CleanUp.FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT)) {
+								nodesToAnnotateWithParameterAreNonnullByDefault.add(typeDecl);
+							}
 						}
 					}
 				}
@@ -96,7 +103,7 @@ public class Jsr305CleanUp implements ICleanUp {
 		if (annotationsToRemove.isEmpty()) {
 			return null;
 		}
-		return new JSr305CleanUpFix(context, annotationsToRemove, nodesToAnnotateWithParameterAreNonnullByDefault,
+		return new Jsr305CleanUpFix(context, annotationsToRemove, nodesToAnnotateWithParameterAreNonnullByDefault,
 				nodesToAnnotateWithReturnValuesAreNonnullByDefault);
 	}
 
@@ -154,11 +161,21 @@ public class Jsr305CleanUp implements ICleanUp {
 	}
 
 	private static Annotation findNonnullAnnotation(final List<IExtendedModifier> modifiers) {
+		final String className = "javax.annotation.Nonnull";
+		return findAnnotation(modifiers, className);
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean hasAnnotation(TypeDeclaration typeDecl, String className) {
+		return findAnnotation(typeDecl.modifiers(), className) != null;
+	}
+
+	private static Annotation findAnnotation(final List<IExtendedModifier> modifiers, final String className) {
 		for (final IExtendedModifier modifier : modifiers) {
 			if (modifier.isAnnotation()) {
 				final Annotation anno = (Annotation) modifier;
 				final String fqn = anno.resolveTypeBinding().getQualifiedName();
-				if ("javax.annotation.Nonnull".equals(fqn)) {
+				if (className.equals(fqn)) {
 					return anno;
 				}
 			}
