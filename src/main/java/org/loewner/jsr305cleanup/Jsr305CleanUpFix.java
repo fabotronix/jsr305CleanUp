@@ -41,8 +41,9 @@ public class Jsr305CleanUpFix implements ICleanUpFix {
 		for (final ASTNode node : _annotationsToRemove) {
 			rewriter.remove(node, null);
 		}
-		addAnnotation(ast, rewriter, "ParametersAreNonnullByDefault");
-		addAnnotation(ast, rewriter, "ReturnValuesAreNonnullByDefault");
+		addAnnotation(ast, rewriter, "ParametersAreNonnullByDefault", _nodesToAnnotateWithParameterAreNonnullByDefault);
+		addAnnotation(ast, rewriter, "ReturnValuesAreNonnullByDefault",
+				_nodesToAnnotateWithReturnValuesAreNonnullByDefault);
 
 		change.setEdit(rewriter.rewriteAST());
 		final boolean addImportForParameters = !_nodesToAnnotateWithParameterAreNonnullByDefault.isEmpty();
@@ -60,8 +61,9 @@ public class Jsr305CleanUpFix implements ICleanUpFix {
 		return change;
 	}
 
-	private void addAnnotation(final AST ast, final ASTRewrite rewriter, String annotationName) {
-		for (final TypeDeclaration node : _nodesToAnnotateWithParameterAreNonnullByDefault) {
+	private static void addAnnotation(final AST ast, final ASTRewrite rewriter, String annotationName,
+			Collection<TypeDeclaration> nodes) {
+		for (final TypeDeclaration node : nodes) {
 			final ListRewrite listRewrite = rewriter.getListRewrite(node, TypeDeclaration.MODIFIERS2_PROPERTY);
 			final MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
 			markerAnnotation.setTypeName(ast.newName(annotationName));
