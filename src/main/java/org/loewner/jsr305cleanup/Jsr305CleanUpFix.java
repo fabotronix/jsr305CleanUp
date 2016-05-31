@@ -4,6 +4,8 @@ import java.util.Collection;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -13,6 +15,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
+import org.eclipse.jdt.ui.PreferenceConstants;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
@@ -49,7 +52,7 @@ public class Jsr305CleanUpFix implements ICleanUpFix {
 		final boolean addImportForParameters = !_nodesToAnnotateWithParameterAreNonnullByDefault.isEmpty();
 		final boolean addImportForReturns = !_nodesToAnnotateWithReturnValuesAreNonnullByDefault.isEmpty();
 		if (addImportForParameters || addImportForReturns) {
-			final ImportRewrite importRewrite = ImportRewrite.create(_context.getCompilationUnit(), true);
+			final ImportRewrite importRewrite = createImportRewriterWithProjectSettings();
 			if (addImportForParameters) {
 				importRewrite.addImport(Jsr305CleanUp.FQN_PARAMETERS_ARE_NONNULL_BY_DEFAULT);
 			}
@@ -59,6 +62,28 @@ public class Jsr305CleanUpFix implements ICleanUpFix {
 			change.addEdit(importRewrite.rewriteImports(progressMonitor));
 		}
 		return change;
+	}
+
+	private ImportRewrite createImportRewriterWithProjectSettings() throws JavaModelException {
+		final ImportRewrite importRewrite = ImportRewrite.create(_context.getCompilationUnit(), true);
+		final IJavaProject project = importRewrite.getCompilationUnit().getJavaProject();
+		try {
+			final int num = Integer.parseInt(
+					PreferenceConstants.getPreference(PreferenceConstants.ORGIMPORTS_ONDEMANDTHRESHOLD, project));
+			importRewrite.setOnDemandImportThreshold(num <= 0 ? 1 : num);
+		} catch (final NumberFormatException e) {
+			// ignore
+		}
+		try {
+			final int num = Integer.parseInt(PreferenceConstants
+					.getPreference(PreferenceConstants.ORGIMPORTS_STATIC_ONDEMANDTHRESHOLD, project));
+			importRewrite.setStaticOnDemandImportThreshold(num <= 0 ? 1 : num);
+		} catch (final NumberFormatException e) {
+			// ignore
+		}
+		importRewrite.setImportOrder(
+				PreferenceConstants.getPreference(PreferenceConstants.ORGIMPORTS_IMPORTORDER, project).split(";"));
+		return importRewrite;
 	}
 
 	private static void addAnnotation(final AST ast, final ASTRewrite rewriter, String annotationName,
