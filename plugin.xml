@@ -6,7 +6,7 @@
       <cleanUpConfigurationUI
             class="org.loewner.jsr305cleanup.Jsr305CleanUpConfigurationUi"
             cleanUpKind="saveAction"
-            name="jsr305CleanUpUiSaveAction">
+            name="JSR305">
       </cleanUpConfigurationUI>
       <cleanUp
             class="org.loewner.jsr305cleanup.Jsr305CleanUp"
